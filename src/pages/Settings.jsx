@@ -6,19 +6,21 @@ import { useApp } from '../context/AppContext';
 import { Bell, Shield, Palette, Globe, User, CreditCard, ChevronRight } from 'lucide-react';
 
 const sections = [
-    { icon: User, label: 'Profile Settings', desc: 'Update personal info and account details' },
-    { icon: Bell, label: 'Notifications', desc: 'Control alerts and email preferences' },
-    { icon: Shield, label: 'Security', desc: 'Password, 2FA, and login activity' },
-    { icon: Palette, label: 'Appearance', desc: 'Customize theme and display options' },
-    { icon: Globe, label: 'Currency & Region', desc: 'Set your preferred currency and locale' },
-    { icon: CreditCard, label: 'Billing', desc: 'Subscription and payment methods' },
+    { icon: Bell,       label: 'Notifications',    desc: 'Control alerts and email preferences' },
+    { icon: Shield,     label: 'Security',          desc: 'Password, 2FA, and login activity' },
+    { icon: Globe,      label: 'Currency & Region', desc: 'Set your preferred currency and locale' },
+    { icon: CreditCard, label: 'Billing',           desc: 'Subscription and payment methods' },
 ];
 
 export default function Settings() {
-    const { darkMode, toggleDarkMode } = useApp();
-    const [name, setName] = useState('John Doe');
-    const [email, setEmail] = useState('john@example.com');
+    const { darkMode, toggleDarkMode, user } = useApp();
+    const [name, setName]   = useState(user?.name  || '');
+    const [email, setEmail] = useState(user?.email || '');
     const [saved, setSaved] = useState(false);
+
+    const initials = name
+        ? name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+        : 'U';
 
     const handleSave = () => {
         setSaved(true);
@@ -32,17 +34,17 @@ export default function Settings() {
                 <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-5">Profile</h3>
                 <div className="flex items-center gap-4 mb-6">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-xl font-bold shadow-md">
-                        JD
+                        {initials}
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{name}</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{name || 'User'}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">{email}</p>
                         <button className="mt-1 text-xs text-primary-600 dark:text-primary-400 font-medium hover:underline">Change avatar</button>
                     </div>
                 </div>
                 <div className="space-y-4">
-                    <Input label="Full Name" id="settings-name" value={name} onChange={e => setName(e.target.value)} />
-                    <Input label="Email Address" id="settings-email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                    <Input label="Full Name"      id="settings-name"  value={name}  onChange={(e) => setName(e.target.value)} />
+                    <Input label="Email Address"  id="settings-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 {saved && (
                     <div className="mt-4 px-4 py-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl text-emerald-700 dark:text-emerald-400 text-sm font-medium">
@@ -50,7 +52,7 @@ export default function Settings() {
                     </div>
                 )}
                 <div className="mt-5 flex gap-3">
-                    <Button variant="primary" onClick={handleSave}>Save Changes</Button>
+                    <Button variant="primary"    onClick={handleSave}>Save Changes</Button>
                     <Button variant="secondary">Cancel</Button>
                 </div>
             </Card>

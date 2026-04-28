@@ -3,12 +3,12 @@ import { useApp } from '../context/AppContext';
 import ChartContainer from '../components/ui/ChartContainer';
 import Card from '../components/ui/Card';
 import Select from '../components/ui/Select';
-import { CATEGORIES, EXPENSE_CATEGORIES, getCategoryById, MONTHLY_DATA } from '../data/mockData';
+import { CATEGORIES, EXPENSE_CATEGORIES, getCategoryById } from '../data/mockData';
 import {
-    AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
-import { format, parseISO, getMonth, getYear } from 'date-fns';
+import { format, parseISO, getMonth, startOfMonth } from 'date-fns';
 
 const MONTHS = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -21,6 +21,21 @@ export default function Reports() {
     const { transactions, formatCurrency } = useApp();
     const [selectedMonth, setSelectedMonth] = useState('all');
     const [selectedCategory, setSelectedCategory] = useState('all');
+
+    // Build monthly area chart data from real transactions
+    const monthlyData = useMemo(() => {
+        const map = {};
+        transactions.forEach((t) => {
+            const key = format(startOfMonth(parseISO(t.date)), 'yyyy-MM');
+            if (!map[key]) map[key] = { month: format(parseISO(t.date), 'MMM'), income: 0, expenses: 0 };
+            if (t.type === 'income')  map[key].income   += t.amount;
+            if (t.type === 'expense') map[key].expenses += t.amount;
+        });
+        return Object.entries(map)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .slice(-8)
+            .map(([, v]) => v);
+    }, [transactions]);
 
     const filtered = useMemo(() => {
         return transactions.filter(t => {
@@ -102,7 +117,7 @@ export default function Reports() {
                 {/* Area Chart */}
                 <ChartContainer title="Income vs Expenses Trend" subtitle="Monthly overview" className="lg:col-span-3">
                     <ResponsiveContainer width="100%" height={250}>
-                        <AreaChart data={MONTHLY_DATA}>
+                        <AreaChart data={monthlyData}>
                             <defs>
                                 <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
