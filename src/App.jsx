@@ -5,9 +5,16 @@ import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 function AppContent() {
-    const { currentPage } = useApp();
+    const { token, currentPage, authPage } = useApp();
+
+    // Not logged in → show auth pages
+    if (!token) {
+        return authPage === 'register' ? <Register /> : <Login />;
+    }
 
     const pages = {
         dashboard: <Dashboard />,
