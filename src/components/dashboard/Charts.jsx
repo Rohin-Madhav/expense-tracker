@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
     BarChart,
     Bar,
@@ -9,11 +10,11 @@ import {
     PieChart,
     Pie,
     Cell,
-    Legend,
 } from 'recharts';
 import { useApp } from '../../context/AppContext';
 import ChartContainer from '../ui/ChartContainer';
-import { MONTHLY_DATA, getCategoryById } from '../../data/mockData';
+import { getCategoryById } from '../../data/mockData';
+import { format, parseISO, startOfMonth } from 'date-fns';
 
 const CustomTooltipBar = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -48,14 +49,29 @@ const CustomTooltipPie = ({ active, payload }) => {
 };
 
 export default function Charts() {
-    const { categoryBreakdown } = useApp();
+    const { transactions, categoryBreakdown } = useApp();
 
-    const total = categoryBreakdown.reduce((s, c) => s + c.value, 0);
-    const pieData = categoryBreakdown.map(c => ({
+    // Build monthly bar chart data from real transactions (last 8 months)
+    const monthlyData = useMemo(() => {
+        const map = {};
+        transactions.forEach((t) => {
+            const key = format(startOfMonth(parseISO(t.date)), 'yyyy-MM');
+            if (!map[key]) map[key] = { month: format(parseISO(t.date), 'MMM'), income: 0, expenses: 0 };
+            if (t.type === 'income')  map[key].income   += t.amount;
+            if (t.type === 'expense') map[key].expenses += t.amount;
+        });
+        return Object.entries(map)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .slice(-8)
+            .map(([, v]) => v);
+    }, [transactions]);
+
+    const total   = categoryBreakdown.reduce((s, c) => s + c.value, 0);
+    const pieData = categoryBreakdown.map((c) => ({
         ...c,
-        name: c.category,
+        name:    c.category,
         percent: total > 0 ? ((c.value / total) * 100).toFixed(1) : 0,
-        fill: getCategoryById(c.category).color,
+        fill:    getCategoryById(c.category).color,
     }));
 
     return (
@@ -66,36 +82,30 @@ export default function Charts() {
                 subtitle="Monthly comparison overview"
                 className="lg:col-span-3"
             >
-                <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={MONTHLY_DATA} barCategoryGap="30%" barGap={4}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
-                        <XAxis
-                            dataKey="month"
-                            tick={{ fontSize: 11, fill: '#94a3b8' }}
-                            axisLine={false}
-                            tickLine={false}
-                        />
-                        <YAxis
-                            tick={{ fontSize: 11, fill: '#94a3b8' }}
-                            axisLine={false}
-                            tickLine={false}
-                            tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
-                        />
-                        <Tooltip content={<CustomTooltipBar />} cursor={{ fill: 'rgba(148,163,184,0.08)', radius: 6 }} />
-                        <Bar dataKey="income" name="income" fill="#6366f1" radius={[6, 6, 0, 0]} />
-                        <Bar dataKey="expenses" name="expenses" fill="#ec4899" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-                <div className="flex items-center gap-4 mt-3 justify-center">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                        <div className="w-3 h-3 rounded-sm bg-primary-500" />
-                        Income
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                        <div className="w-3 h-3 rounded-sm bg-pink-500" />
-                        Expenses
-                    </div>
-                </div>
+                {monthlyData.length > 0 ? (
+                    <>
+                        <ResponsiveContainer width="100%" height={260}>
+                            <BarChart data={monthlyData} barCategoryGap="30%" barGap={4}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
+                                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                                <Tooltip content={<CustomTooltipBar />} cursor={{ fill: 'rgba(148,163,184,0.08)', radius: 6 }} />
+                                <Bar dataKey="income"   name="income"   fill="#6366f1" radius={[6, 6, 0, 0]} />
+                                <Bar dataKey="expenses" name="expenses" fill="#ec4899" radius={[6, 6, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                        <div className="flex items-center gap-4 mt-3 justify-center">
+                            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                <div className="w-3 h-3 rounded-sm bg-primary-500" /> Income
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                <div className="w-3 h-3 rounded-sm bg-pink-500" /> Expenses
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex items-center justify-center h-64 text-slate-400 text-sm">No data yet — add transactions to see the chart</div>
+                )}
             </ChartContainer>
 
             {/* Pie Chart */}

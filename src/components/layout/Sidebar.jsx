@@ -6,22 +6,27 @@ import {
     Settings,
     TrendingUp,
     X,
+    LogOut,
 } from 'lucide-react';
 
 const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
     { id: 'transactions', label: 'Transactions', icon: ArrowLeftRight },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'reports',      label: 'Reports',      icon: BarChart3 },
+    { id: 'settings',     label: 'Settings',     icon: Settings },
 ];
 
 export default function Sidebar() {
-    const { currentPage, setCurrentPage, sidebarOpen, setSidebarOpen } = useApp();
+    const { currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, user, logout } = useApp();
 
     const handleNav = (id) => {
         setCurrentPage(id);
         setSidebarOpen(false);
     };
+
+    const initials = user?.name
+        ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+        : 'U';
 
     return (
         <>
@@ -81,12 +86,19 @@ export default function Sidebar() {
                 <div className="px-3 pb-4">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                            JD
+                            {initials}
                         </div>
-                        <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">John Doe</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">john@example.com</p>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.name || 'User'}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email || ''}</p>
                         </div>
+                        <button
+                            onClick={logout}
+                            title="Sign out"
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                        >
+                            <LogOut size={15} />
+                        </button>
                     </div>
                 </div>
             </aside>

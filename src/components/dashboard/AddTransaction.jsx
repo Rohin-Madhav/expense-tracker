@@ -11,53 +11,61 @@ import { format } from 'date-fns';
 const INITIAL_FORM = {
     title: '',
     amount: '',
-    category: 'food',
+    category: 'Food',
     date: format(new Date(), 'yyyy-MM-dd'),
     type: 'expense',
 };
 
 export default function AddTransaction() {
     const { addTransaction } = useApp();
-    const [form, setForm] = useState(INITIAL_FORM);
-    const [errors, setErrors] = useState({});
+    const [form, setForm]       = useState(INITIAL_FORM);
+    const [errors, setErrors]   = useState({});
     const [success, setSuccess] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [apiError, setApiError] = useState('');
 
     const categories = form.type === 'income'
-        ? CATEGORIES.filter(c => INCOME_CATEGORIES.includes(c.id))
-        : CATEGORIES.filter(c => EXPENSE_CATEGORIES.includes(c.id));
+        ? CATEGORIES.filter((c) => INCOME_CATEGORIES.includes(c.id))
+        : CATEGORIES.filter((c) => EXPENSE_CATEGORIES.includes(c.id));
 
     const validate = () => {
         const errs = {};
         if (!form.title.trim()) errs.title = 'Title is required';
-        if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0) errs.amount = 'Enter a valid amount';
+        if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0)
+            errs.amount = 'Enter a valid amount';
         if (!form.date) errs.date = 'Date is required';
         return errs;
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setForm(prev => {
+        setForm((prev) => {
             const next = { ...prev, [name]: value };
-            // Reset category when type changes
             if (name === 'type') {
-                next.category = value === 'income' ? 'salary' : 'food';
+                next.category = value === 'income' ? 'Salary' : 'Food';
             }
             return next;
         });
-        if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+        if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const errs = validate();
-        if (Object.keys(errs).length > 0) {
-            setErrors(errs);
-            return;
+        if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+
+        setLoading(true);
+        setApiError('');
+        try {
+            await addTransaction({ ...form, amount: Number(form.amount) });
+            setForm(INITIAL_FORM);
+            setSuccess(true);
+            setTimeout(() => setSuccess(false), 3000);
+        } catch (err) {
+            setApiError(err.response?.data?.message || 'Failed to add transaction. Please try again.');
+        } finally {
+            setLoading(false);
         }
-        addTransaction({ ...form, amount: Number(form.amount) });
-        setForm(INITIAL_FORM);
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
     };
 
     return (
@@ -75,6 +83,12 @@ export default function AddTransaction() {
             {success && (
                 <div className="mb-4 px-4 py-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl text-emerald-700 dark:text-emerald-400 text-sm font-medium animate-slide-up flex items-center gap-2">
                     <span>✓</span> Transaction added successfully!
+                </div>
+            )}
+
+            {apiError && (
+                <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl text-red-700 dark:text-red-400 text-sm font-medium">
+                    {apiError}
                 </div>
             )}
 
@@ -143,15 +157,18 @@ export default function AddTransaction() {
                     value={form.category}
                     onChange={handleChange}
                 >
-                    {categories.map(cat => (
+                    {categories.map((cat) => (
                         <option key={cat.id} value={cat.id}>{cat.icon} {cat.label}</option>
                     ))}
                 </Select>
 
-                <Button type="submit" variant="primary" className="w-full">
+                <Button type="submit" variant="primary" className="w-full" disabled={loading}>
                     <span className="flex items-center justify-center gap-2">
-                        <PlusCircle size={16} />
-                        Add Transaction
+                        {loading
+                            ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            : <PlusCircle size={16} />
+                        }
+                        {loading ? 'Saving...' : 'Add Transaction'}
                     </span>
                 </Button>
             </form>
