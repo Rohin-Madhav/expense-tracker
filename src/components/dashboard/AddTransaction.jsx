@@ -128,7 +128,7 @@ export default function AddTransaction() {
 
                 <div className="grid grid-cols-2 gap-3">
                     <Input
-                        label="Amount ($)"
+                        label="Amount (₹)"
                         id="txn-amount"
                         name="amount"
                         type="number"
