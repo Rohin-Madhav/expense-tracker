@@ -30,8 +30,8 @@ export const getCategoryById = (id) =>
   CATEGORIES.find((c) => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
 
 export const formatCurrency = (amount) =>
-  new Intl.NumberFormat("en-US", {
+  new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     minimumFractionDigits: 0,
   }).format(amount);
